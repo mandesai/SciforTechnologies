@@ -1,0 +1,346 @@
+import streamlit as st
+import smtplib, os, random  
+import smtplib
+from urllib.parse import quote
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from email.mime.application import MIMEApplication
+
+# Streamlit App
+st.set_page_config(page_title="Retail Billing System", layout="wide")
+
+# Assuming these are your global variables
+
+if 'result_total' not in st.session_state:
+	st.session_state.result_total = 0
+if 'totalcosmeticprice' not in st.session_state:
+	st.session_state.totalcosmeticprice = 0
+if 'totalgroceryprice' not in st.session_state:
+	st.session_state.totalgroceryprice = 0
+if 'totaldrinksprice' not in st.session_state:
+	st.session_state.totaldrinksprice = 0
+if 'savebill' not in st.session_state:
+    st.session_state.savebill = 0
+if 'sender_email' not in st.session_state:
+    st.session_state.sender_email = 0
+if 'recipient_email' not in st.session_state:
+    st.session_state.recipient_email = 0
+if 'sender_password' not in st.session_state:
+    st.session_state.sender_password = 0
+if 'email_message' not in st.session_state:
+    st.session_state.email_message = 0
+if 'submitted' not in st.session_state:
+    st.session_state.submitted = 0
+if 'bathsoap' not in st.session_state:
+    st.session_state.bathsoap = 0
+if 'tea' not in st.session_state:
+    st.session_state.tea = 0
+if 'sugar' not in st.session_state:
+    st.session_state.sugar = 0
+if 'wheat' not in st.session_state:
+    st.session_state.wheat = 0
+if 'daal' not in st.session_state:
+    st.session_state.daal = 0
+if 'oil' not in st.session_state:
+    st.session_state.oil = 0
+if 'rice' not in st.session_state:
+    st.session_state.rice = 0  
+if 'bodylotion' not in st.session_state:
+    st.session_state.bodylotion = 0
+if 'hairgel' not in st.session_state:
+    st.session_state.hairgel = 0
+if 'hairspray' not in st.session_state:
+    st.session_state.hairspray = 0
+if 'facewash' not in st.session_state:
+    st.session_state.facewash = 0
+if 'facecream' not in st.session_state:
+    st.session_state.facecream = 0
+if 'maaza' not in st.session_state:
+    st.session_state.maaza = 0
+if 'pepsi' not in st.session_state:
+    st.session_state.pepsi = 0
+if 'sprite' not in st.session_state:
+    st.session_state.sprite = 0
+if 'dew' not in st.session_state:
+    st.session_state.dew = 0
+if 'frooti' not in st.session_state:
+    st.session_state.frooti = 0
+if 'cocacola' not in st.session_state:
+    st.session_state.cocacola = 0
+if 'name' not in st.session_state:
+    st.session_state.name = 0
+if 'phone' not in st.session_state:
+    st.session_state.phone = 0
+
+
+bathsoap = 0  
+facecream = 0
+facewash = 0
+hairspray = 0
+hairgel = 0
+bodylotion = 0
+soapprice = 0
+facecreamprice = 0
+facewashprice=0
+bodylotionprice=0
+hairsprayprice=0
+hairgelprice=0
+wheatprice=0
+teaprice=0
+sugarprice=0
+oilprice=0
+daalprice=0
+riceprice=0
+cocacolaprice=0
+frootiprice=0
+dewprice=0
+spriteprice=0
+pepsiprice=0
+maazaprice=0
+
+# Create 'bills' directory if it doesn't exist
+if not st.session_state.get('bills_directory_created', False):
+    st.session_state.bills_directory_created = True
+    st.session_state.bill_directory = 'bills'
+    if not os.path.exists(st.session_state.bill_directory):
+        os.mkdir(st.session_state.bill_directory)
+
+# Function to clear entries
+def clear_entries():
+    st.session_state.bathsoap = 0
+    st.session_state.bodylotion = 0
+    st.session_state.hairgel = 0
+    st.session_state.hairspray = 0
+    st.session_state.facewash = 0
+    st.session_state.facecream = 0
+    st.session_state.tea = 0
+    st.session_state.sugar = 0
+    st.session_state.wheat = 0
+    st.session_state.daal = 0
+    st.session_state.oil = 0
+    st.session_state.rice = 0
+    st.session_state.cocacola = 0
+    st.session_state.frooti=0
+    st.session_state.dew=0
+    st.session_state.sprite=0
+    st.session_state.pepsi=0
+    st.session_state.maaza=0
+    st.session_state.name = None
+    st.session_state.phone = None
+
+# Function to search bill
+def search_bill():
+    if bill_number == '':
+        st.error('Invalid Bill Number')
+        return None
+    else:
+        for i in os.listdir('bills/'):
+            if i.split('.')[0] == bill_number:
+                filename = f'bills/{i}'
+                with open(filename, 'r') as f:
+                    bill_content = f.read()
+                    st.text(bill_content)
+                break
+            else:
+                st.error('Invalid Bill Number')                  
+
+# Function to save bill
+def save_bill(bill_content):
+    filename = f'bills/{billnumber}.txt'
+    with open(filename, 'w') as file:
+        file.write(bill_content)
+    st.success(f'Bill saved successfully')
+
+billnumber = random.randint(500,1000)
+
+# Function to calculate bill area
+def bill():
+    if st.session_state.name == '' or st.session_state.phone == '':
+        st.error('Error: Customer details are required.')
+    elif st.session_state.totalcosmeticprice == '' and st.session_state.totalgroceryprice == '' and st.session_state.totaldrinksprice == '':
+        st.error('Error: No products are selected.')
+    elif st.session_state.totalcosmeticprice == '0 Rs' and st.session_state.totalgroceryprice == '0 Rs' and st.session_state.totaldrinksprice == '0 Rs':
+        st.error('Error: No products are selected.')
+    else:
+        bill_content = f'\t\t**Welcome Customer**\n\n'
+        bill_content += f'Bill Number: {billnumber}\n'
+        bill_content += f'Customer Name: {st.session_state.name}\n'
+        bill_content += f'Customer Phone Number: {st.session_state.phone}\n'
+        bill_content += '\n=======================================================\n'
+        bill_content += 'Product\t\t\tQuantity\t\t\tPrice\n'
+        bill_content += '=======================================================\n'
+        
+        if st.session_state.bathsoap != 0:
+            bill_content += f'Bath Soap\t\t\t{st.session_state.bathsoap}\t\t\t{st.session_state.bathsoap*20} Rs'
+        if st.session_state.facecream != 0:
+            bill_content += f'\nFace Cream\t\t\t{st.session_state.facecream}\t\t\t{st.session_state.facecream*50} Rs'
+        if st.session_state.facewash != 0:
+            bill_content += f'\nFace Wash\t\t\t{st.session_state.facewash}\t\t\t{st.session_state.facewash*100} Rs'
+        if st.session_state.hairspray != 0:
+            bill_content += f'\nHair Spray\t\t\t{st.session_state.hairspray}\t\t\t{st.session_state.hairspray*150} Rs'
+        if st.session_state.hairgel != 0:
+            bill_content += f'\nHair Gel\t\t\t{st.session_state.hairgel}\t\t\t{st.session_state.hairgel*80} Rs'
+        if st.session_state.bodylotion != 0:
+            bill_content += f'\nBody Lotion\t\t\t{st.session_state.bodylotion}\t\t\t{st.session_state.bodylotion*60} Rs'
+        if st.session_state.rice != 0:
+            bill_content += f'\nRice\t\t\t\t{st.session_state.rice}\t\t\t{st.session_state.rice*200} Rs'
+        if st.session_state.oil != 0:
+            bill_content += f'\nOil\t\t\t\t{st.session_state.oil}\t\t\t{st.session_state.oil*120} Rs'
+        if st.session_state.daal != 0:
+            bill_content += f'\nDaal\t\t\t\t{st.session_state.daal}\t\t\t{st.session_state.daal*100} Rs'
+        if st.session_state.wheat != 0:
+            bill_content += f'\nWheat\t\t\t\t{st.session_state.wheat}\t\t\t{st.session_state.wheat*80} Rs'
+        if st.session_state.sugar != 0:
+            bill_content += f'\nSugar\t\t\t\t{st.session_state.sugar}\t\t\t{st.session_state.sugar*50} Rs'
+        if st.session_state.tea != 0:
+            bill_content += f'\nTea\t\t\t\t{st.session_state.tea}\t\t\t{st.session_state.tea*10} Rs'
+        if st.session_state.maaza != 0:
+            bill_content += f'\nMaaza\t\t\t\t{st.session_state.maaza}\t\t\t{st.session_state.maaza*20} Rs'
+        if st.session_state.pepsi != 0:
+            bill_content += f'\nPepsi\t\t\t\t{st.session_state.pepsi}\t\t\t{st.session_state.pepsi*15} Rs'
+        if st.session_state.sprite != 0:
+            bill_content += f'\nSprite\t\t\t\t{st.session_state.sprite}\t\t\t{st.session_state.sprite*30} Rs'
+        if st.session_state.dew != 0:
+            bill_content += f'\nDew\t\t\t\t{st.session_state.dew}\t\t\t{st.session_state.dew*25} Rs'
+        if st.session_state.frooti != 0:
+            bill_content += f'\nFrooti\t\t\t\t{st.session_state.frooti}\t\t\t{st.session_state.frooti*15} Rs'
+        if st.session_state.cocacola != 0:
+            bill_content += f'\nCoca Cola\t\t\t{st.session_state.cocacola}\t\t\t{st.session_state.cocacola*30} Rs'
+        
+
+        bill_content += '\n-------------------------------------------------------\n'
+        bill_content += f'\nCosmetic Tax\t\t{st.session_state.totalcosmeticprice * 0.12} Rs\n'
+        bill_content += f'Grocery Tax\t\t{st.session_state.totalgroceryprice * 0.05} Rs\n'
+        bill_content += f'Cold Drinks Tax\t\t{st.session_state.totaldrinksprice * 0.08} Rs\n'
+        bill_content += f'Total Bill \t\t\t\t{st.session_state.result_total}\n'
+        bill_content += '-------------------------------------------------------\n'
+        
+        # Display the generated bill content
+        st.session_state.savebill = st.text(bill_content)
+
+        save_bill(bill_content)
+            
+
+def total():
+    # Cosmetic price calculation
+    st.subheader("Bill Menu")
+    col1, col2 = st.columns(2)
+    global totalcosmeticprice, bathsoap, facecream, facewash, hairspray, hairgel, bodylotion
+
+    soapprice = st.session_state.bathsoap * 20
+    facecreamprice = st.session_state.facecream * 50
+    facewashprice = st.session_state.facewash * 100
+    hairsprayprice = st.session_state.hairspray* 150
+    hairgelprice = st.session_state.hairgel * 80
+    bodylotionprice = st.session_state.bodylotion * 60
+
+    st.session_state.totalcosmeticprice = soapprice + facewashprice + facecreamprice + hairgelprice + hairsprayprice + bodylotionprice
+    cosmetictax = st.session_state.totalcosmeticprice * 0.12
+    
+
+    # Grocery price calculation
+    riceprice = st.session_state.rice * 200
+    daalprice = st.session_state.daal * 100
+    oilprice = st.session_state.oil * 120
+    sugarprice = st.session_state.sugar * 50
+    teaprice = st.session_state.tea * 10
+    wheatprice = st.session_state.wheat * 80
+
+    st.session_state.totalgroceryprice = riceprice + daalprice + oilprice + sugarprice + teaprice + wheatprice
+    grocerytax = st.session_state.totalgroceryprice * 0.05
+
+    # Drinks price calculation
+    maazaprice = st.session_state.maaza * 20
+    pepsiprice = st.session_state.pepsi * 15
+    spriteprice = st.session_state.sprite * 30
+    dewprice = st.session_state.dew * 25
+    frootiprice = st.session_state.frooti * 15
+    cocacolaprice = st.session_state.cocacola * 30
+
+    st.session_state.totaldrinksprice = maazaprice + pepsiprice + spriteprice + dewprice + frootiprice + cocacolaprice
+    drinkstax = st.session_state.totaldrinksprice * 0.08
+
+    st.session_state.result_total = st.session_state.totalcosmeticprice + st.session_state.totalgroceryprice + st.session_state.totaldrinksprice + cosmetictax + grocerytax + drinkstax
+
+    with col1:
+        st.subheader("Total Price")
+        cosmeticpriceEntry = st.text_input("Cosmetic Price", value=st.session_state.totalcosmeticprice)
+        grocerypriceEntry = st.text_input("Grocery Price", value=st.session_state.totalgroceryprice)
+        drinkspriceEntry = st.text_input("Drinks Price", value=st.session_state.totaldrinksprice)
+
+    with col2:
+        st.subheader("Total Tax")
+        cosmetictaxEntry = st.text_input("Cosmetic Tax",value=cosmetictax)
+        grocerytaxEntry = st.text_input("Grocery Tax", value=grocerytax) 
+        drinkstaxEntry = st.text_input("Drinks Tax", value=drinkstax)   
+
+
+# Customer Details
+st.subheader("Customer Details")
+col1, col2, col3, col4 = st.columns(4)
+
+with col1:
+    st.session_state.name = st.text_input("Name")
+with col2:
+    st.session_state.phone = st.text_input("Phone")
+with col3:
+    bill_number = st.text_input("Bill Number")
+with col4:
+    st.button("SEARCH", on_click=search_bill)
+
+# Products Frame
+st.subheader("Products")
+col_cosmetics, col_grocery, col_drinks = st.columns(3)
+
+# Cosmetics
+with col_cosmetics:
+    st.subheader("Cosmetics")
+    st.session_state.bathsoap = st.number_input("Bath Soap", value=st.session_state.bathsoap)
+    st.session_state.facecream = st.number_input("Face Cream", value=st.session_state.facecream)
+    st.session_state.facewash = st.number_input("Face Wash", value=st.session_state.facewash)
+    st.session_state.hairspray = st.number_input("Hair Spray", value=st.session_state.hairspray)
+    st.session_state.hairgel = st.number_input("Hair Gel", value=st.session_state.hairgel)
+    st.session_state.bodylotion = st.number_input("Body Lotion", value=st.session_state.bodylotion)
+
+# Grocery
+with col_grocery:
+    st.subheader("Grocery")
+    st.session_state.rice = st.number_input("Rice", value=st.session_state.rice)
+    st.session_state.oil = st.number_input("Oil", value=st.session_state.oil)
+    st.session_state.daal = st.number_input("Daal", value=st.session_state.daal)
+    st.session_state.wheat = st.number_input("Wheat", value=st.session_state.wheat)
+    st.session_state.sugar = st.number_input("Sugar", value=st.session_state.sugar)
+    st.session_state.tea = st.number_input("Tea", value=st.session_state.tea)
+
+# Drinks
+with col_drinks:
+    st.subheader("Cold Drinks")
+    st.session_state.maaza = st.number_input("Maaza", value=st.session_state.maaza)
+    st.session_state.pepsi = st.number_input("Pepsi", value=st.session_state.pepsi)
+    st.session_state.sprite = st.number_input("Sprite", value=st.session_state.sprite)
+    st.session_state.dew = st.number_input("Dew", value=st.session_state.dew)
+    st.session_state.frooti = st.number_input("Frooti", value=st.session_state.frooti)
+    st.session_state.cocacola = st.number_input("Coca Cola", value=st.session_state.cocacola)
+
+# Bill Menu Frame
+st.subheader("Bill Menu")
+col1, col2, col3, col4, col5, col6, col7, col8 = st.columns(8)
+
+with col1:
+    totalButton = st.button("Total", on_click=total)
+with col2:
+    billbutton = st.button("Bill", on_click=bill)   
+with col3:
+    clearButton = st.button("Clear", on_click=clear_entries)
+with col4:
+    button_text = st.text_input("Enter bill Number:")
+    encoded_button_text = quote(button_text)
+    st.markdown(f"[Send Email](http://localhost:8502/?button_text={encoded_button_text})", unsafe_allow_html=True)
+with col5:
+    pass
+with col6:
+    pass
+with col7:
+    pass
+with col8:
+    pass
